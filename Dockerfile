@@ -1,5 +1,5 @@
 # ==========================================
-# Stage 1: Build dependencies & cache wheels
+# Stage 1: Build dependencies in virtual env
 # ==========================================
 FROM python:3.11-slim AS builder
 
@@ -15,8 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy only requirements file to leverage Docker layer cache
 COPY requirements.txt .
 
-# Pre-compile wheels into a local cache directory
-RUN pip install --no-cache-dir --user -r requirements.txt
+# Create virtual environment and install dependencies
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir -r requirements.txt
 
 
 # ==========================================
@@ -32,9 +34,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed python package binaries from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy codebase contents
 COPY . .
@@ -43,9 +45,10 @@ COPY . .
 RUN groupadd -g 999 appgroup && \
     useradd -r -u 999 -g appgroup -d /app appuser
 
-# Initialize local chunked upload folders and assign ownership to appuser
+# Initialize local chunked upload folders and assign ownership
 RUN mkdir -p /app/data/uploads && \
-    chown -R appuser:appgroup /app
+    chown -R appuser:appgroup /app && \
+    chown -R appuser:appgroup /opt/venv
 
 USER appuser
 
