@@ -11,7 +11,7 @@ services:
   # ----------------------------------------------------------------------------
   # 1. Qdrant Vector Database (Private Service)
   # ----------------------------------------------------------------------------
-  - type: private
+  - type: pserv
     name: qdrant
     env: image
     image: qdrant/qdrant:latest

@@ -71,3 +71,11 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+# Mask and log database target for production diagnostics
+try:
+    db_url = settings.DATABASE_URL
+    masked_url = db_url.split("@")[-1] if "@" in db_url else db_url
+    print(f"[FinRAG Diagnostics] Loaded DATABASE_URL targeting host: {masked_url}", flush=True)
+except Exception as e:
+    print(f"[FinRAG Diagnostics] Error masking database URL: {str(e)}", flush=True)
