@@ -13,8 +13,8 @@ services:
   # ----------------------------------------------------------------------------
   - type: pserv
     name: qdrant
-    env: image
-    image: qdrant/qdrant:latest
+    env: docker
+    dockerfilePath: ./qdrant.Dockerfile
     plan: starter # Starter plan recommended for persistent disks support
     disk:
       name: qdrant-storage
@@ -22,7 +22,7 @@ services:
       sizeGB: 10
     envVars:
       - key: PORT
-        value: 6333
+        value: "6333"
 
   # ----------------------------------------------------------------------------
   # 2. FastAPI Backend Web Service (Public API)
@@ -30,7 +30,7 @@ services:
   - type: web
     name: finrag-vault-api
     env: docker
-    dockerfile: Dockerfile
+    dockerfilePath: ./Dockerfile
     plan: starter # Starter plan recommended to run neural model embeddings efficiently
     disk:
       name: uploads-storage
