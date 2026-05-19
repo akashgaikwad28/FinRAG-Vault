@@ -1,0 +1,78 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: finrag_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: SecretPassword123!
+      POSTGRES_DB: finrag_vault
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d finrag_vault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:v1.9.0
+    container_name: finrag_qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: finrag_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - API_V1_STR=/api/v1
+      - SECRET_KEY=37a1f592cd719b02014b2d1847e923e2060b943ea9815ad47a507f354f9a0c7e
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      
+      # Database connection targeting the docker network name
+      - DATABASE_URL=postgresql+asyncpg://postgres:SecretPassword123!@db:5432/finrag_vault
+      
+      # Qdrant connection targeting docker container
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_COLLECTION=finrag_vault
+      
+      # Upload limits
+      - MAX_UPLOAD_SIZE=52428800 # 50MB
+      - UPLOAD_DIR=/app/data/uploads
+      
+      # Embedding model details
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - RERANK_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+    volumes:
+      # Persistent bind volume for chunked PDF/Word document uploads
+      - uploaded_documents:/app/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  uploaded_documents:
