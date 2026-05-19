@@ -45,8 +45,9 @@ COPY . .
 RUN groupadd -g 999 appgroup && \
     useradd -r -u 999 -g appgroup -d /app appuser
 
-# Initialize local chunked upload folders and assign ownership
+# Initialize local chunked upload folders, set execute permissions, and assign ownership
 RUN mkdir -p /app/data/uploads && \
+    chmod +x /app/start.sh && \
     chown -R appuser:appgroup /app && \
     chown -R appuser:appgroup /opt/venv
 
@@ -60,5 +61,5 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
 
-# Run server with standard uvicorn production flags
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Run the database migration and start server using the startup script
+CMD ["/app/start.sh"]
