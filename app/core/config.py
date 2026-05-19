@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
 
+    def __init__(self, **values):
+        super().__init__(**values)
+        # Automatically convert postgresql:// to postgresql+asyncpg:// for SQLAlchemy async engine compatibility
+        if self.DATABASE_URL and self.DATABASE_URL.startswith("postgresql://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
     class Config:
         env_file = ".env"
         case_sensitive = True
