@@ -30,7 +30,7 @@ services:
   - type: web
     name: finrag-vault-api
     env: docker
-    dockerfilePath: ./Dockerfile
+    dockerfile: Dockerfile
     plan: starter # Starter plan recommended to run neural model embeddings efficiently
     disk:
       name: uploads-storage
