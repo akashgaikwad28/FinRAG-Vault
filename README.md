@@ -177,6 +177,27 @@ uvicorn app.main:app --reload
 
 ---
 
+### Option 3: Deploying to the Cloud (Render Deployment)
+FinRAG Vault is fully pre-configured for automated cloud deployment using **Render Blueprints**. 
+
+#### How to Deploy:
+1. **Push your code to GitHub**:
+   Create a new repository on your GitHub account and push the entire codebase to it.
+2. **Launch on Render**:
+   - Navigate to the [Render Dashboard](https://dashboard.render.com/).
+   - Click the **New +** button in the top-right and select **Blueprint**.
+   - Connect your GitHub repository.
+3. **Automatic Provisioning**:
+   Render will parse our [`render.yaml`](file:///c:/Users/akash/FinRAG%20Vault/render.yaml) specification and automatically set up:
+   *   A managed **PostgreSQL** database instance.
+   *   A secure private **Qdrant** database service (using a 10GB persistent storage disk to ensure no vector loss on server restarts).
+   *   Our FastAPI **Web Service** (compiled from our multi-stage production `Dockerfile`, backed by a 10GB persistent storage disk to secure uploaded PDFs/docs).
+   *   An automatically generated cryptographically secure JWT `SECRET_KEY` environment variable.
+4. **Boot & Execution**:
+   Render handles the entire container build, automatically executes schemas, seeds initial roles/admin accounts during the startup lifespan, and exposes a secure public HTTPS gateway for your API endpoints.
+
+---
+
 ## 🧪 Running Unit Tests
 FinRAG Vault includes a hermetic, zero-dependency unit test suite using an in-memory SQLite database (`aiosqlite`) and mocks for Qdrant.
 

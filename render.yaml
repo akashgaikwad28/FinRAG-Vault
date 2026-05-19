@@ -1,0 +1,89 @@
+# ==============================================================================
+# Render Blueprint Specification for FinRAG Vault
+# ==============================================================================
+# This Blueprint automates the provisioning of:
+# 1. A Managed PostgreSQL Instance (Metadata Persistence)
+# 2. A Private Qdrant Vector Service (with Persistent Storage Volumes)
+# 3. A Public FastAPI Web Service (Built via multi-stage Dockerfile with Volumes)
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Qdrant Vector Database (Private Service)
+  # ----------------------------------------------------------------------------
+  - type: private
+    name: qdrant
+    env: image
+    image: qdrant/qdrant:latest
+    plan: starter # Starter plan recommended for persistent disks support
+    disk:
+      name: qdrant-storage
+      mountPath: /qdrant/storage
+      sizeGB: 10
+    envVars:
+      - key: PORT
+        value: 6333
+
+  # ----------------------------------------------------------------------------
+  # 2. FastAPI Backend Web Service (Public API)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: finrag-vault-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter # Starter plan recommended to run neural model embeddings efficiently
+    disk:
+      name: uploads-storage
+      mountPath: /data/uploads
+      sizeGB: 10
+    envVars:
+      # Application general configuration
+      - key: APP_NAME
+        value: FinRAG Vault
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+
+      # Database Configuration (Resolves dynamically from PostgreSQL service)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finrag-vault-db
+          property: connectionString
+
+      # Qdrant Private Network Configuration
+      - key: QDRANT_HOST
+        value: qdrant
+      - key: QDRANT_PORT
+        value: "6333"
+      - key: QDRANT_COLLECTION
+        value: finrag_vault
+
+      # Security & JWT Tokens
+      - key: SECRET_KEY
+        generateValue: true # Generates a secure random 256-bit key automatically
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+
+      # File Upload System
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: MAX_UPLOAD_SIZE
+        value: "52428800" # 50MB limits
+
+      # RAG ML Models
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-MiniLM-L6-v2
+      - key: RERANK_MODEL
+        value: cross-encoder/ms-marco-MiniLM-L-6-v2
+
+# ------------------------------------------------------------------------------
+# 3. Managed PostgreSQL Database Instance
+# ------------------------------------------------------------------------------
+databases:
+  - name: finrag-vault-db
+    plan: starter
+    databaseName: finrag_vault
+    user: postgres
