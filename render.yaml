@@ -86,4 +86,3 @@ databases:
   - name: finrag-vault-db
     plan: starter
     databaseName: finrag_vault
-    user: postgres
